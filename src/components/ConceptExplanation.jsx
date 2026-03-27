@@ -1,9 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { X, Volume2, Info, Lightbulb, Zap, Undo, Mic } from 'lucide-react';
 
 const arrangeQuizzes = {
   5: {
-    hin: 'हम Sunday को cricket खेल रहे हैं',
+    hin: 'हम Sunday को cricket खेल रहे हैं  ',
     eng: "We are playing Cricket on sunday",
     words: ['on', 'We', 'are', 'playing', 'at', 'sunday', 'Cricket', 'in'],
     correctArr: ['We', 'are', 'playing', 'Cricket', 'on', 'sunday'],
@@ -59,6 +59,19 @@ function ConceptExplanation() {
   const [isChecked, setIsChecked] = useState(false);
   const [isSpeakingPhase, setIsSpeakingPhase] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (isChecked || isSpeakingPhase) {
+      setTimeout(() => {
+        if (resultRef.current) {
+          resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
+        }
+        // Fallback for tricky mobile viewports
+        window.scrollBy({ top: 300, behavior: 'smooth' });
+      }, 150);
+    }
+  }, [isChecked, isSpeakingPhase]);
 
   const [arrangedWords, setArrangedWords] = useState([]);
   const [availableWords, setAvailableWords] = useState(arrangeQuizzes[5].words);
@@ -72,6 +85,7 @@ function ConceptExplanation() {
       setIsSpeakingPhase(false);
       setIsListening(false);
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
   const handleWordClick = (word, from) => {
@@ -327,7 +341,7 @@ function ConceptExplanation() {
 
       {/* Quiz 1 Result Block */}
       {currentStep === 1 && isChecked && (
-        <div className={`quiz-result-box ${selectedOption === 'present_continuous' ? 'success' : 'error'} `}>
+        <div ref={resultRef} className={`quiz-result-box ${selectedOption === 'present_continuous' ? 'success' : 'error'} `}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
@@ -430,7 +444,7 @@ function ConceptExplanation() {
 
       {/* Quiz 2 Result Block */}
       {currentStep === 2 && isChecked && (
-        <div className={`quiz-result-box ${selectedOption === 'opt_correct' ? 'success' : 'error'} `}>
+        <div ref={resultRef} className={`quiz-result-box ${selectedOption === 'opt_correct' ? 'success' : 'error'} `}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
@@ -544,7 +558,7 @@ function ConceptExplanation() {
 
       {/* Quiz 3 Result Block */}
       {currentStep === 3 && isChecked && (
-        <div className={`quiz-result-box ${selectedOption === 'opt_correct_he' ? 'success' : 'error'} `}>
+        <div ref={resultRef} className={`quiz-result-box ${selectedOption === 'opt_correct_he' ? 'success' : 'error'} `}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
@@ -657,8 +671,9 @@ function ConceptExplanation() {
       )}
 
       {/* Quiz 4 Result Block */}
+
       {currentStep === 4 && isChecked && (
-        <div className={`quiz-result-box ${selectedOption === 'opt_correct_they' ? 'success' : 'error'} `}>
+        <div ref={resultRef} className={`quiz-result-box ${selectedOption === 'opt_correct_they' ? 'success' : 'error'} `}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
@@ -790,7 +805,7 @@ function ConceptExplanation() {
 
       {/* Arrange Quizzes Result Block */}
       {[5, 6, 7].includes(currentStep) && isChecked && (
-        <div className={`quiz-result-box ${isArrangementCorrect ? 'success' : 'error'}`} style={{ marginTop: '24px' }}>
+        <div ref={resultRef} className={`quiz-result-box ${isArrangementCorrect ? 'success' : 'error'}`} style={{ marginTop: '24px' }}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
@@ -964,7 +979,7 @@ function ConceptExplanation() {
 
       {/* Speaking Quizzes Result Block */}
       {[8, 9, 10].includes(currentStep) && isChecked && (
-        <div className={`quiz-result-box ${!isSpeakingPhase ? 'error' : 'success'}`} style={{ marginTop: '24px' }}>
+        <div ref={resultRef} className={`quiz-result-box ${!isSpeakingPhase ? 'error' : 'success'}`} style={{ marginTop: '24px' }}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
