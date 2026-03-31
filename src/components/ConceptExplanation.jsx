@@ -321,6 +321,19 @@ function ConceptExplanation() {
         <button className="close-btn" aria-label="Close">
           <X size={20} strokeWidth={3} />
         </button>
+        <button style={{ marginLeft: '8px', padding: '4px 8px', fontSize: '11px', background: 'rgba(239, 68, 68, 0.8)', color: '#fff', border: 'none', borderRadius: '4px', cursor: 'pointer', fontWeight: 'bold' }} onClick={() => {
+            setCurrentStep(12);
+            setIsPracticeActive(true);
+            setPracticeQuestionIndex(0);
+            setChatMessages([{
+              sender: 'bot',
+              text: language === 'Hindi'
+                ? "Hey! Great job इस concept को समझने पर। अब, चलो 10 sentences को English में translate करने की कोशिश करते हैं। क्या आप start करने के लिए तैयार हैं?"
+                : "Hey! Great job understanding this concept. Now, let's try to translate 10 sentences into English. Are you ready to start?"
+            }]);
+        }}>
+          SKIP TO CHAT
+        </button>
         <div className="progress-track">
           <div 
              className="progress-fill" 
@@ -1196,8 +1209,8 @@ function ConceptExplanation() {
 
       {/* Chat UI for Step 12 */}
       {currentStep === 12 && isPracticeActive && (
-        <div style={{ background: '#10b981', borderRadius: '24px', padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '600px', flex: 1, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
-          <div className="quiz-header" style={{ padding: '20px', paddingBottom: '20px', background: '#10b981', margin: 0 }}>
+        <div style={{ background: '#10b981', borderRadius: '24px', padding: '0px', display: 'flex', flexDirection: 'column', height: 'calc(100vh - 50px)', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+          <div className="quiz-header" style={{ padding: '20px', paddingBottom: '20px', background: '#10b981', margin: 0, zIndex: 10, flexShrink: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span style={{ fontSize: '13px', fontWeight: '800', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>SPEAKING PRACTICE</span>
               <button style={{ background: 'rgba(255,255,255, 0.2)', border: 'none', borderRadius: '8px', padding: '6px' }}>
@@ -1278,7 +1291,7 @@ function ConceptExplanation() {
             <div ref={chatEndRef} />
           </div>
 
-          <div style={{ padding: '20px', borderTop: '1px solid #2a2e47', display: 'flex', justifyContent: 'center', background: '#0f172a' }}>
+          <div style={{ padding: '20px', borderTop: '1px solid #2a2e47', display: 'flex', justifyContent: 'center', background: '#0f172a', zIndex: 10, flexShrink: 0 }}>
             <button
               onClick={startListening}
               disabled={chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length}
