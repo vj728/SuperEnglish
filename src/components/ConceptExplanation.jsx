@@ -178,6 +178,7 @@ function ConceptExplanation() {
           const normalize = (str) => {
             return str
               .toLowerCase()
+              .replace(/:00/g, '')
               .replace(/[.,?!:;]/g, '')
               .replace(/1/g, 'one')
               .replace(/2/g, 'two')
@@ -187,8 +188,6 @@ function ConceptExplanation() {
               .replace(/6/g, 'six')
               .replace(/7 pm/gi, 'seven pm')
               .replace(/7pm/gi, 'seven pm')
-              .replace(/7 p\.m\./gi, 'seven pm')
-              .replace(/7 p\.m/gi, 'seven pm')
               .replace(/7/g, 'seven')
               .replace(/8/g, 'eight')
               .replace(/9/g, 'nine')
