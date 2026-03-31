@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { X, Volume2, Info, Lightbulb, Zap, Undo, Mic } from 'lucide-react';
 
 const arrangeQuizzes = {
@@ -62,15 +62,8 @@ function ConceptExplanation() {
   const resultRef = useRef(null);
 
   useEffect(() => {
-    if (isChecked || isSpeakingPhase) {
-      setTimeout(() => {
-        if (resultRef.current) {
-          resultRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' });
-        }
-        // Fallback for tricky mobile viewports
-        window.scrollBy({ top: 300, behavior: 'smooth' });
-      }, 150);
-    }
+    // intentional blank space to prevent hooks re-indexing heavily if preferred, 
+    // but just removing it is fine too.
   }, [isChecked, isSpeakingPhase]);
 
   const [arrangedWords, setArrangedWords] = useState([]);
@@ -85,7 +78,6 @@ function ConceptExplanation() {
       setIsSpeakingPhase(false);
       setIsListening(false);
     }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentStep]);
 
   const handleWordClick = (word, from) => {
@@ -190,19 +182,24 @@ function ConceptExplanation() {
     }
   };
 
-  return (
-    <div className="concept-screen">
-      {/* Top Nav */}
+  const headerSection = useMemo(() => (
+    <>
       <div className="top-nav flex-row">
         <button className="close-btn" aria-label="Close">
           <X size={20} strokeWidth={3} />
         </button>
         <div className="progress-track">
-          <div className="progress-fill" style={{ width: `${progress}% ` }}></div>
+          <div 
+             className="progress-fill" 
+             style={{ 
+               width: '100%', 
+               transform: `scaleX(${progress / 100})`, 
+               transformOrigin: 'left center' 
+             }}>
+          </div>
         </div>
       </div>
 
-      {/* Language Toggle */}
       <div className="flex-row justify-center">
         <div className="language-toggle">
           <button
@@ -223,68 +220,72 @@ function ConceptExplanation() {
       <div className="header-area">
         <h1 className="concept-title">Present Continuous Tense</h1>
       </div>
+    </>
+  ), [progress, language]);
 
-      <div className="content-card">
-        <div className="visual-aid">
-          <img src="/present_continuous.png" alt="Concept Illustration" className="concept-image" />
-          <div className="visual-overlay">
-            <span className="visual-tag">Action in progress</span>
-          </div>
-        </div>
+  return (
+    <div className="concept-screen">
+      {headerSection}
 
-        <div className="learning-section">
-          {/* Main rule */}
-          <div className="learning-row">
-            <button className="audio-btn" onClick={handleAudioPlay}>
-              <Volume2 size={24} strokeWidth={2.5} />
-            </button>
-            <div className="text-content">
-              <p className="learning-text">
-                {language === 'Hindi'
-                  ? <>चलिए <span className="highlight-english">Present Continuous</span> के बारे में सीखते हैं।</>
-                  : <>Let's learn about the <span className="highlight-english">Present Continuous</span> tense.</>
-                }
-              </p>
-              <p className="learning-text secondary">
-                {language === 'Hindi'
-                  ? <>ये tense तब use होता है जब कोई काम "अभी चल रहा है" (happening right now)।</>
-                  : <>This tense is used when an action is happening right now.</>
-                }
-              </p>
+      {currentStep === 0 && (
+        <>
+          <div className="content-card">
+            <div className="visual-aid">
+              <img src="/present_continuous.png" alt="Concept Illustration" className="concept-image" />
+              <div className="visual-overlay">
+                <span className="visual-tag">Action in progress</span>
+              </div>
+            </div>
+
+            <div className="learning-section">
+              {/* Main rule */}
+              <div className="learning-row">
+                <button className="audio-btn" onClick={handleAudioPlay}>
+                  <Volume2 size={24} strokeWidth={2.5} />
+                </button>
+                <div className="text-content">
+                  <p className="learning-text">
+                    {language === 'Hindi'
+                      ? <>चलिए <span className="highlight-english">Present Continuous</span> के बारे में सीखते हैं।</>
+                      : <>Let's learn about the <span className="highlight-english">Present Continuous</span> tense.</>
+                    }
+                  </p>
+                  <p className="learning-text secondary">
+                    {language === 'Hindi'
+                      ? <>ये tense तब use होता है जब कोई काम "अभी चल रहा है" (happening right now)।</>
+                      : <>This tense is used when an action is happening right now.</>
+                    }
+                  </p>
+                </div>
+              </div>
+
+              {/* Example */}
+              <div className="learning-row" style={{ background: 'rgba(56, 189, 248, 0.05)', borderColor: 'rgba(56, 189, 248, 0.1)' }}>
+                <div className="audio-btn" style={{ background: 'transparent', color: '#10b981', borderColor: 'transparent' }}>
+                  <Info size={24} strokeWidth={2.5} />
+                </div>
+                <div className="text-content">
+                  <p className="learning-text">
+                    {language === 'Hindi'
+                      ? <>जैसे <span className="highlight-english">"They are running"</span></>
+                      : <>For example: <span className="highlight-english">"They are running"</span></>
+                    }
+                  </p>
+                  <p className="learning-text secondary">
+                    {language === 'Hindi'
+                      ? <>इसका मतलब है कि वे अभी दौड़ रहे हैं।</>
+                      : <>Which means the running action is happening at this exact moment.</>
+                    }
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          {/* Example */}
-          <div className="learning-row" style={{ background: 'rgba(56, 189, 248, 0.05)', borderColor: 'rgba(56, 189, 248, 0.1)' }}>
-            <div className="audio-btn" style={{ background: 'transparent', color: '#10b981', borderColor: 'transparent' }}>
-              <Info size={24} strokeWidth={2.5} />
-            </div>
-            <div className="text-content">
-              <p className="learning-text">
-                {language === 'Hindi'
-                  ? <>जैसे <span className="highlight-english">"They are running"</span></>
-                  : <>For example: <span className="highlight-english">"They are running"</span></>
-                }
-              </p>
-              <p className="learning-text secondary">
-                {language === 'Hindi'
-                  ? <>इसका मतलब है कि वे अभी दौड़ रहे हैं।</>
-                  : <>Which means the running action is happening at this exact moment.</>
-                }
-              </p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {currentStep === 0 ? (
-        <button className="btn-primary" onClick={() => setCurrentStep(1)}>
-          LET'S LEARN
-        </button>
-      ) : (
-        <button className="btn-primary" disabled>
-          GOT IT
-        </button>
+          <button className="btn-primary" onClick={() => setCurrentStep(1)}>
+            LET'S LEARN
+          </button>
+        </>
       )}
 
       {/* Pop Quiz Section 1 */}
@@ -763,8 +764,8 @@ function ConceptExplanation() {
 
               {/* Drop area */}
               <div className="drop-area-container" style={{ minHeight: '120px', borderBottom: '1px solid #2a2e47', marginBottom: '24px', display: 'flex', flexWrap: 'wrap', gap: '12px', alignContent: 'flex-start', paddingBottom: '12px' }}>
-                {arrangedWords.map((w, i) => (
-                  <button key={`arr-${i}`} className="word-btn" onClick={() => handleWordClick(w, 'arranged')}>{w}</button>
+                {arrangedWords.map((w) => (
+                  <button key={`arr-${w}`} className="word-btn" onClick={() => handleWordClick(w, 'arranged')}>{w}</button>
                 ))}
               </div>
 
@@ -779,8 +780,8 @@ function ConceptExplanation() {
                   </button>
                 </div>
                 <div className="available-words" style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', justifyContent: 'flex-start', minHeight: '120px', alignContent: 'flex-start' }}>
-                  {availableWords.map((w, i) => (
-                    <button key={`avail-${i}`} className="word-btn" onClick={() => handleWordClick(w, 'available')}>{w}</button>
+                  {availableWords.map((w) => (
+                    <button key={`avail-${w}`} className="word-btn" onClick={() => handleWordClick(w, 'available')}>{w}</button>
                   ))}
                 </div>
               </div>
@@ -963,9 +964,7 @@ function ConceptExplanation() {
                       onClick={startListening}
                       disabled={isListening}
                       style={{ background: isListening ? '#ef4444' : '#8b5cf6', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${isListening ? 'rgba(239, 68, 68, 0.4)' : 'rgba(139, 92, 246, 0.4)'}`, transition: 'all 0.2s', cursor: isListening ? 'default' : 'pointer', opacity: isListening ? 0.8 : 1 }}
-                      onMouseDown={(e) => !isListening && (e.currentTarget.style.transform = 'scale(0.95)')}
-                      onMouseUp={(e) => !isListening && (e.currentTarget.style.transform = 'scale(1)')}
-                      onMouseLeave={(e) => !isListening && (e.currentTarget.style.transform = 'scale(1)')}
+                      // scaling removed per user request
                     >
                       <Mic size={32} color="#fff" strokeWidth={isListening ? 3 : 2.5} />
                     </button>
