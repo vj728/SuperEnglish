@@ -59,6 +59,7 @@ function ConceptExplanation() {
   const [isChecked, setIsChecked] = useState(false);
   const [isSpeakingPhase, setIsSpeakingPhase] = useState(false);
   const [isListening, setIsListening] = useState(false);
+  const [isSpeechCorrect, setIsSpeechCorrect] = useState(null);
   const resultRef = useRef(null);
 
   useEffect(() => {
@@ -77,6 +78,7 @@ function ConceptExplanation() {
       setIsChecked(false);
       setIsSpeakingPhase(false);
       setIsListening(false);
+      setIsSpeechCorrect(null);
     }
   }, [currentStep]);
 
@@ -143,6 +145,7 @@ function ConceptExplanation() {
       setIsListening(true);
       setTimeout(() => {
         setIsListening(false);
+        setIsSpeechCorrect(true);
         setIsChecked(true);
       }, 1500);
       return;
@@ -157,7 +160,37 @@ function ConceptExplanation() {
     };
 
     recognition.onresult = (event) => {
-      console.log("Speech recognized: ", event.results[0][0].transcript);
+      let isCorrect = false;
+      
+      if (event.results && event.results[0] && event.results[0][0]) {
+        const transcript = event.results[0][0].transcript;
+        console.log("Speech recognized: ", transcript);
+
+        const currentQuiz = speakQuizzes[currentStep];
+        if (currentQuiz && currentQuiz.eng) {
+          let expectedText = currentQuiz.eng.toLowerCase();
+          let spokenText = transcript.toLowerCase();
+          
+          const normalize = (str) => {
+            return str
+              .replace(/[.,?!:;]/g, '')
+              .replace(/7 pm/g, 'seven pm')
+              .replace(/7pm/g, 'seven pm')
+              .replace(/7 p\.m\./g, 'seven pm')
+              .replace(/7 p\.m/g, 'seven pm')
+              .replace(/7/g, 'seven')
+              .replace(/\s+/g, ' ')
+              .trim();
+          };
+
+          const nSpoken = normalize(spokenText);
+          const nExpected = normalize(expectedText);
+
+          isCorrect = nSpoken === nExpected || nSpoken.includes(nExpected);
+        }
+      }
+      
+      setIsSpeechCorrect(isCorrect);
       setIsListening(false);
       setIsChecked(true);
     };
@@ -978,20 +1011,24 @@ function ConceptExplanation() {
 
       {/* Speaking Quizzes Result Block */}
       {[8, 9, 10].includes(currentStep) && isChecked && (
-        <div ref={resultRef} className={`quiz-result-box ${!isSpeakingPhase ? 'error' : 'success'}`} style={{ marginTop: '24px' }}>
+        <div ref={resultRef} className={`quiz-result-box ${!isSpeakingPhase ? 'error' : (isSpeechCorrect ? 'success' : 'error')}`} style={{ marginTop: '24px' }}>
           <div className="quiz-result-row">
             <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ paddingTop: '0' }}>
               <Volume2 size={24} strokeWidth={2.5} />
             </button>
             <div className="quiz-result-text" style={{ marginBottom: 0 }}>
-              {isSpeakingPhase ? (
+              {!isSpeakingPhase ? (
+                language === 'Hindi'
+                  ? `Oops! सही जवाब है: '${speakQuizzes[currentStep].eng}'.`
+                  : `Oops! The correct answer is: '${speakQuizzes[currentStep].eng}'.`
+              ) : isSpeechCorrect ? (
                 language === 'Hindi'
                   ? `Excellent! आपने बिल्कुल सही बोला: '${speakQuizzes[currentStep].eng}'`
                   : `Excellent! You said it perfectly: '${speakQuizzes[currentStep].eng}'`
               ) : (
                 language === 'Hindi'
-                  ? `Oops! सही जवाब है: '${speakQuizzes[currentStep].eng}'.`
-                  : `Oops! The correct answer is: '${speakQuizzes[currentStep].eng}'.`
+                  ? `Oops! आपने सही नहीं बोला। कोशिश करें: '${speakQuizzes[currentStep].eng}'`
+                  : `Oops! That didn't sound quite right. Try saying: '${speakQuizzes[currentStep].eng}'`
               )}
             </div>
           </div>
@@ -1005,13 +1042,19 @@ function ConceptExplanation() {
                 setIsSpeakingPhase(true);
                 setIsChecked(false);
               } else {
-                setCurrentStep(currentStep + 1);
-                setIsChecked(false);
-                setIsSpeakingPhase(false);
+                if (isSpeechCorrect) {
+                  setCurrentStep(currentStep + 1);
+                  setIsChecked(false);
+                  setIsSpeakingPhase(false);
+                  setIsSpeechCorrect(null);
+                } else {
+                  setIsChecked(false);
+                  setIsSpeechCorrect(null);
+                }
               }
             }}
           >
-            {!isSpeakingPhase ? "CONTINUE TO SPEAKING" : "CONTINUE"}
+            {!isSpeakingPhase ? "CONTINUE TO SPEAKING" : (isSpeechCorrect ? "CONTINUE" : "TRY AGAIN")}
           </button>
         </div>
       )}
