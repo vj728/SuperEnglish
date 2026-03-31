@@ -80,6 +80,7 @@ function ConceptExplanation() {
   const [chatMessages, setChatMessages] = useState([]);
   const [practiceQuestionIndex, setPracticeQuestionIndex] = useState(0);
   const chatEndRef = useRef(null);
+  const recognitionRef = useRef(null);
 
   const resultRef = useRef(null);
 
@@ -201,6 +202,11 @@ function ConceptExplanation() {
   };
 
   const startListening = () => {
+    if (isListening && recognitionRef.current) {
+      recognitionRef.current.stop();
+      return;
+    }
+
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert("Your browser does not support Speech Recognition. We will simulate a successful speech.");
       setIsListening(true);
@@ -220,6 +226,7 @@ function ConceptExplanation() {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
+    recognitionRef.current = recognition;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -1187,17 +1194,17 @@ function ConceptExplanation() {
 
       {/* Chat UI for Step 12 */}
       {currentStep === 12 && isPracticeActive && (
-        <div className="quiz-container" style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '600px', flex: 1 }}>
-          <div className="quiz-header" style={{ padding: '20px', paddingBottom: '0' }}>
+        <div style={{ background: '#10b981', borderRadius: '24px', padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '600px', flex: 1, overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.1)' }}>
+          <div className="quiz-header" style={{ padding: '20px', paddingBottom: '20px', background: '#10b981', margin: 0 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <span style={{ fontSize: '13px', fontWeight: '800', color: '#94a3b8', letterSpacing: '0.5px' }}>SPEAKING PRACTICE</span>
-              <button style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '6px' }}>
-                <Lightbulb size={20} color="#38bdf8" />
+              <span style={{ fontSize: '13px', fontWeight: '800', color: 'rgba(255,255,255,0.8)', letterSpacing: '0.5px' }}>SPEAKING PRACTICE</span>
+              <button style={{ background: 'rgba(255,255,255, 0.2)', border: 'none', borderRadius: '8px', padding: '6px' }}>
+                <Lightbulb size={20} color="#fff" />
               </button>
             </div>
             
             {/* Embedded Hint Box from Screenshots */}
-            <div style={{ background: '#fff', borderRadius: '12px', marginTop: '16px', padding: '12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+            <div style={{ background: '#fff', borderRadius: '12px', marginTop: '16px', padding: '16px 12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
                {/* 4 columns: in, on, at, exceptions */}
                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderRight: '1px solid #e2e8f0', paddingRight: '4px' }}>
                  <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>in</span> [July]</div>
@@ -1220,7 +1227,7 @@ function ConceptExplanation() {
             </div>
           </div>
 
-          <div className="chat-area" style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div className="chat-area" style={{ flex: 1, padding: '20px', paddingBottom: '40px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px', background: '#0f172a' }}>
             {chatMessages.map((msg, idx) => (
               <div key={idx} style={{ display: 'flex', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: '12px' }}>
                 {msg.sender === 'bot' && (
@@ -1272,10 +1279,14 @@ function ConceptExplanation() {
           <div style={{ padding: '20px', borderTop: '1px solid #2a2e47', display: 'flex', justifyContent: 'center', background: '#0f172a' }}>
             <button
               onClick={startListening}
-              disabled={isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length}
-              style={{ background: isListening ? '#ef4444' : '#8b5cf6', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${isListening ? 'rgba(239, 68, 68, 0.4)' : 'rgba(139, 92, 246, 0.4)'}`, transition: 'all 0.2s', cursor: (isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 'default' : 'pointer', opacity: (isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 0.5 : 1 }}
+              disabled={chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length}
+              style={{ background: isListening ? '#ef4444' : '#8b5cf6', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${isListening ? 'rgba(239, 68, 68, 0.4)' : 'rgba(139, 92, 246, 0.4)'}`, transition: 'all 0.2s', cursor: (chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 'default' : 'pointer', opacity: (chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 0.5 : 1, border: 'none' }}
             >
-              <Mic size={32} color="#fff" strokeWidth={isListening ? 3 : 2.5} />
+              {isListening ? (
+                <div style={{ width: '24px', height: '24px', background: '#fff', borderRadius: '4px' }}></div>
+              ) : (
+                <Mic size={32} color="#fff" strokeWidth={2.5} />
+              )}
             </button>
           </div>
         </div>
