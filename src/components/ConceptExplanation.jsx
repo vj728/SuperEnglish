@@ -52,6 +52,19 @@ const speakQuizzes = {
   }
 };
 
+const practiceSentences = [
+  { hin: 'मैं Monday को पढ़ रहा हूँ।', eng: 'I am studying on Monday' },
+  { hin: 'वह March में खेल रही है।', eng: 'She is playing in March' },
+  { hin: 'हम 5 PM पर खाना खा रहे हैं।', eng: 'We are eating at 5 PM' },
+  { hin: 'वे Tuesday को नाच रहे हैं।', eng: 'They are dancing on Tuesday' },
+  { hin: 'तुम 10 AM पर लिख रहे हो।', eng: 'You are writing at 10 AM' },
+  { hin: 'बारिश April में गिर रही है।', eng: 'It is raining in April' },
+  { hin: 'वह Wednesday को गाना गा रही है।', eng: 'She is singing on Wednesday' },
+  { hin: 'बच्चे 8 PM पर टीवी देख रहे हैं।', eng: 'The children are watching TV at 8 PM' },
+  { hin: 'मैं Thursday को दौड़ रहा हूँ।', eng: 'I am running on Thursday' },
+  { hin: 'हम October में खेल रहे हैं।', eng: 'We are playing in October' }
+];
+
 function ConceptExplanation() {
   const [language, setLanguage] = useState('Hindi');
   const [currentStep, setCurrentStep] = useState(0);
@@ -61,7 +74,20 @@ function ConceptExplanation() {
   const [isListening, setIsListening] = useState(false);
   const [isSpeechCorrect, setIsSpeechCorrect] = useState(null);
   const [lastSpokenText, setLastSpokenText] = useState("");
+  
+  // Chat Practice States
+  const [isPracticeActive, setIsPracticeActive] = useState(false);
+  const [chatMessages, setChatMessages] = useState([]);
+  const [practiceQuestionIndex, setPracticeQuestionIndex] = useState(0);
+  const chatEndRef = useRef(null);
+
   const resultRef = useRef(null);
+
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [chatMessages]);
 
   useEffect(() => {
     // intentional blank space to prevent hooks re-indexing heavily if preferred, 
@@ -141,6 +167,39 @@ function ConceptExplanation() {
     console.log("Playing audio for current text...");
   };
 
+  const handlePracticeSpeechResult = (transcript, isCorrect) => {
+    setChatMessages(prev => {
+      const newMsgs = [...prev, { sender: 'user', text: transcript }];
+      if (isCorrect) {
+        newMsgs.push({ sender: 'bot', text: language === 'Hindi' ? "Excellent! बिल्कुल सही।" : "Excellent! Perfect." });
+      } else {
+        const currentExpectedEng = practiceSentences[practiceQuestionIndex].eng;
+        newMsgs.push({ sender: 'bot', text: language === 'Hindi' ? `Oops! हमने सुना: "${transcript}" । कोशिश करें: "${currentExpectedEng}"` : `Oops! We heard: "${transcript}". Try saying: "${currentExpectedEng}"` });
+      }
+      return newMsgs;
+    });
+
+    if (isCorrect) {
+      setTimeout(() => {
+        setPracticeQuestionIndex(prevIdx => {
+          const nextIdx = prevIdx + 1;
+          if (nextIdx < practiceSentences.length) {
+            setChatMessages(prev => [...prev, { 
+              sender: 'bot', 
+              text: `Question ${nextIdx + 1}: ${practiceSentences[nextIdx].hin}\n${language === 'Hindi' ? 'इसका answer English में दीजिए।' : 'Answer this in English.'}` 
+            }]);
+          } else {
+            setChatMessages(prev => [...prev, { 
+              sender: 'bot', 
+              text: "Congratulations! You have successfully translated all 10 sentences!" 
+            }]);
+          }
+          return nextIdx;
+        });
+      }, 1500);
+    }
+  };
+
   const startListening = () => {
     if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
       alert("Your browser does not support Speech Recognition. We will simulate a successful speech.");
@@ -149,7 +208,11 @@ function ConceptExplanation() {
         setIsListening(false);
         setLastSpokenText("Simulated successful speech");
         setIsSpeechCorrect(true);
-        setIsChecked(true);
+        if (isPracticeActive) {
+          handlePracticeSpeechResult("Simulated successful speech", true);
+        } else {
+          setIsChecked(true);
+        }
       }, 1500);
       return;
     }
@@ -170,29 +233,39 @@ function ConceptExplanation() {
         console.log("Speech recognized: ", transcript);
         setLastSpokenText(transcript);
 
-        const currentQuiz = speakQuizzes[currentStep];
-        if (currentQuiz && currentQuiz.eng) {
-          let expectedText = currentQuiz.eng.toLowerCase();
+        let currentExpectedEng = "";
+        if (isPracticeActive) {
+          const pQuiz = practiceSentences[practiceQuestionIndex];
+          if (pQuiz && pQuiz.eng) currentExpectedEng = pQuiz.eng;
+        } else {
+          const currentQuiz = speakQuizzes[currentStep];
+          if (currentQuiz && currentQuiz.eng) currentExpectedEng = currentQuiz.eng;
+        }
+
+        if (currentExpectedEng) {
+          let expectedText = currentExpectedEng.toLowerCase();
           let spokenText = transcript.toLowerCase();
           
           const normalize = (str) => {
-            return str
-              .toLowerCase()
-              .replace(/:00/g, '')
-              .replace(/[.,?!:;]/g, '')
-              .replace(/1/g, 'one')
-              .replace(/2/g, 'two')
-              .replace(/3/g, 'three')
-              .replace(/4/g, 'four')
-              .replace(/5/g, 'five')
-              .replace(/6/g, 'six')
-              .replace(/7 pm/gi, 'seven pm')
-              .replace(/7pm/gi, 'seven pm')
-              .replace(/7/g, 'seven')
-              .replace(/8/g, 'eight')
-              .replace(/9/g, 'nine')
-              .replace(/\s+/g, ' ')
-              .trim();
+            let res = str.toLowerCase();
+            res = res.replace(/:00/g, '');
+            res = res.replace(/[.,?!:;]/g, '');
+            res = res.replace(/a\.m\./gi, 'am').replace(/p\.m\./gi, 'pm');
+            
+            res = res.replace(/10/g, 'ten')
+                     .replace(/11/g, 'eleven')
+                     .replace(/12/g, 'twelve')
+                     .replace(/1/g, 'one')
+                     .replace(/2/g, 'two')
+                     .replace(/3/g, 'three')
+                     .replace(/4/g, 'four')
+                     .replace(/5/g, 'five')
+                     .replace(/6/g, 'six')
+                     .replace(/7/g, 'seven')
+                     .replace(/8/g, 'eight')
+                     .replace(/9/g, 'nine');
+            
+            return res.replace(/\s+/g, ' ').trim();
           };
 
           const nSpoken = normalize(spokenText);
@@ -206,7 +279,11 @@ function ConceptExplanation() {
       
       setIsSpeechCorrect(isCorrect);
       setIsListening(false);
-      setIsChecked(true);
+      if (isPracticeActive) {
+        handlePracticeSpeechResult(transcript, isCorrect);
+      } else {
+        setIsChecked(true);
+      }
     };
 
     recognition.onerror = (event) => {
@@ -1092,9 +1169,115 @@ function ConceptExplanation() {
             </div>
           </div>
 
-          <button className="btn-primary" style={{ marginTop: '24px' }} onClick={() => alert("Starting interactive practice session...")}>
+          <button className="btn-primary" style={{ marginTop: '24px' }} onClick={() => {
+            setCurrentStep(12);
+            setIsPracticeActive(true);
+            setPracticeQuestionIndex(0);
+            setChatMessages([{
+              sender: 'bot',
+              text: language === 'Hindi'
+                ? "Hey! Great job इस concept को समझने पर। अब, चलो 10 sentences को English में translate करने की कोशिश करते हैं। क्या आप start करने के लिए तैयार हैं?"
+                : "Hey! Great job understanding this concept. Now, let's try to translate 10 sentences into English. Are you ready to start?"
+            }]);
+          }}>
             START PRACTICE
           </button>
+        </div>
+      )}
+
+      {/* Chat UI for Step 12 */}
+      {currentStep === 12 && isPracticeActive && (
+        <div className="quiz-container" style={{ padding: '0px', display: 'flex', flexDirection: 'column', height: '100%', minHeight: '600px', flex: 1 }}>
+          <div className="quiz-header" style={{ padding: '20px', paddingBottom: '0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '13px', fontWeight: '800', color: '#94a3b8', letterSpacing: '0.5px' }}>SPEAKING PRACTICE</span>
+              <button style={{ background: 'rgba(56, 189, 248, 0.1)', border: '1px solid rgba(56, 189, 248, 0.3)', borderRadius: '8px', padding: '6px' }}>
+                <Lightbulb size={20} color="#38bdf8" />
+              </button>
+            </div>
+            
+            {/* Embedded Hint Box from Screenshots */}
+            <div style={{ background: '#fff', borderRadius: '12px', marginTop: '16px', padding: '12px', display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}>
+               {/* 4 columns: in, on, at, exceptions */}
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderRight: '1px solid #e2e8f0', paddingRight: '4px' }}>
+                 <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>in</span> [July]</div>
+                 <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>in</span> [2002]</div>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderRight: '1px solid #e2e8f0', paddingRight: '4px', paddingLeft: '4px' }}>
+                 <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>on</span> [Sunday]</div>
+                 <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>on</span> [14th Feb]</div>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', borderRight: '1px solid #e2e8f0', paddingRight: '4px', paddingLeft: '4px' }}>
+                 <div style={{ fontSize: '12px', color: '#0f172a' }}><span style={{ color: '#8b5cf6', fontWeight: 'bold' }}>at</span> [7PM]</div>
+               </div>
+               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '2px' }}>
+                 <div style={{ fontSize: '11px', color: '#0f172a', textAlign: 'center', lineHeight: '1.2' }}>today, tomorrow,<br/>yesterday</div>
+                 <div style={{ position: 'relative', marginTop: '2px' }}>
+                   <span style={{ color: '#ef4444', fontWeight: 'bold', fontSize: '12px', opacity: 0.8 }}>in, on, at</span>
+                   <div style={{ position: 'absolute', top: '50%', left: '-10%', right: '-10%', height: '2px', background: '#ef4444', transform: 'rotate(-10deg)', marginTop: '-1px' }}></div>
+                 </div>
+               </div>
+            </div>
+          </div>
+
+          <div className="chat-area" style={{ flex: 1, padding: '20px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {chatMessages.map((msg, idx) => (
+              <div key={idx} style={{ display: 'flex', flexDirection: msg.sender === 'user' ? 'row-reverse' : 'row', alignItems: 'flex-start', gap: '12px' }}>
+                {msg.sender === 'bot' && (
+                  <img src="/avatar.png" alt="Bot" style={{ width: '40px', height: '40px', borderRadius: '50%', border: '2px solid #2a2e47' }} onError={(e) => { e.target.src = 'https://api.dicebear.com/7.x/adventurer/svg?seed=Annie'; }} />
+                )}
+                <div style={{ 
+                  background: msg.sender === 'user' ? '#8b5cf6' : '#1e2136', 
+                  color: '#f8fafc', 
+                  padding: '16px', 
+                  borderRadius: '16px', 
+                  borderTopLeftRadius: msg.sender === 'bot' ? '4px' : '16px',
+                  borderTopRightRadius: msg.sender === 'user' ? '4px' : '16px',
+                  maxWidth: '80%',
+                  border: msg.sender === 'bot' ? '1px solid #2a2e47' : 'none',
+                  fontSize: '15px',
+                  lineHeight: '1.5'
+                }}>
+                  {msg.sender === 'bot' && idx === 0 && (
+                    <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ padding: '0', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12px', fontWeight: 'bold' }}>
+                      <Volume2 size={16} strokeWidth={2.5} /> PLAY
+                    </button>
+                  )}
+                  {msg.sender === 'bot' && idx > 1 && msg.text.startsWith('Question') && (
+                    <button className="quiz-audio-btn" onClick={handleAudioPlay} style={{ padding: '0', paddingBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px', background: 'transparent', border: 'none', color: '#38bdf8', fontSize: '12px', fontWeight: 'bold' }}>
+                      <Volume2 size={16} strokeWidth={2.5} /> PLAY
+                    </button>
+                  )}
+                  <span style={{ whiteSpace: 'pre-wrap' }}>{msg.text}</span>
+                  
+                  {idx === 0 && chatMessages.length === 1 && (
+                    <div style={{ marginTop: '16px', borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '16px', textAlign: 'center' }}>
+                      <button style={{ background: 'transparent', border: 'none', color: '#c084fc', fontWeight: 'bold', fontSize: '14px', letterSpacing: '0.5px' }} onClick={() => {
+                        setChatMessages(prev => [
+                          ...prev,
+                          { sender: 'user', text: "Yes! Let's Start." },
+                          { sender: 'bot', text: `Question 1: ${practiceSentences[0].hin}\n${language === 'Hindi' ? 'इसका answer English में दीजिए।' : 'Answer this in English.'}` }
+                        ]);
+                      }}>
+                        YES! LET'S START.
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+            <div ref={chatEndRef} />
+          </div>
+
+          <div style={{ padding: '20px', borderTop: '1px solid #2a2e47', display: 'flex', justifyContent: 'center', background: '#0f172a' }}>
+            <button
+              onClick={startListening}
+              disabled={isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length}
+              style={{ background: isListening ? '#ef4444' : '#8b5cf6', width: '72px', height: '72px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 4px 20px ${isListening ? 'rgba(239, 68, 68, 0.4)' : 'rgba(139, 92, 246, 0.4)'}`, transition: 'all 0.2s', cursor: (isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 'default' : 'pointer', opacity: (isListening || chatMessages.length <= 1 || practiceQuestionIndex >= practiceSentences.length) ? 0.5 : 1 }}
+            >
+              <Mic size={32} color="#fff" strokeWidth={isListening ? 3 : 2.5} />
+            </button>
+          </div>
         </div>
       )}
     </div>
