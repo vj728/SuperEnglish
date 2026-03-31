@@ -60,6 +60,7 @@ function ConceptExplanation() {
   const [isSpeakingPhase, setIsSpeakingPhase] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [isSpeechCorrect, setIsSpeechCorrect] = useState(null);
+  const [lastSpokenText, setLastSpokenText] = useState("");
   const resultRef = useRef(null);
 
   useEffect(() => {
@@ -79,6 +80,7 @@ function ConceptExplanation() {
       setIsSpeakingPhase(false);
       setIsListening(false);
       setIsSpeechCorrect(null);
+      setLastSpokenText("");
     }
   }, [currentStep]);
 
@@ -145,6 +147,7 @@ function ConceptExplanation() {
       setIsListening(true);
       setTimeout(() => {
         setIsListening(false);
+        setLastSpokenText("Simulated successful speech");
         setIsSpeechCorrect(true);
         setIsChecked(true);
       }, 1500);
@@ -165,6 +168,7 @@ function ConceptExplanation() {
       if (event.results && event.results[0] && event.results[0][0]) {
         const transcript = event.results[0][0].transcript;
         console.log("Speech recognized: ", transcript);
+        setLastSpokenText(transcript);
 
         const currentQuiz = speakQuizzes[currentStep];
         if (currentQuiz && currentQuiz.eng) {
@@ -173,12 +177,21 @@ function ConceptExplanation() {
           
           const normalize = (str) => {
             return str
+              .toLowerCase()
               .replace(/[.,?!:;]/g, '')
-              .replace(/7 pm/g, 'seven pm')
-              .replace(/7pm/g, 'seven pm')
-              .replace(/7 p\.m\./g, 'seven pm')
-              .replace(/7 p\.m/g, 'seven pm')
+              .replace(/1/g, 'one')
+              .replace(/2/g, 'two')
+              .replace(/3/g, 'three')
+              .replace(/4/g, 'four')
+              .replace(/5/g, 'five')
+              .replace(/6/g, 'six')
+              .replace(/7 pm/gi, 'seven pm')
+              .replace(/7pm/gi, 'seven pm')
+              .replace(/7 p\.m\./gi, 'seven pm')
+              .replace(/7 p\.m/gi, 'seven pm')
               .replace(/7/g, 'seven')
+              .replace(/8/g, 'eight')
+              .replace(/9/g, 'nine')
               .replace(/\s+/g, ' ')
               .trim();
           };
@@ -188,6 +201,8 @@ function ConceptExplanation() {
 
           isCorrect = nSpoken === nExpected || nSpoken.includes(nExpected);
         }
+      } else {
+        setLastSpokenText("Could not match speech.");
       }
       
       setIsSpeechCorrect(isCorrect);
@@ -1027,8 +1042,8 @@ function ConceptExplanation() {
                   : `Excellent! You said it perfectly: '${speakQuizzes[currentStep].eng}'`
               ) : (
                 language === 'Hindi'
-                  ? `Oops! आपने सही नहीं बोला। कोशिश करें: '${speakQuizzes[currentStep].eng}'`
-                  : `Oops! That didn't sound quite right. Try saying: '${speakQuizzes[currentStep].eng}'`
+                  ? `Oops! हमने सुना: "${lastSpokenText}"। कोशिश करें: '${speakQuizzes[currentStep].eng}'`
+                  : `Oops! We heard: "${lastSpokenText}". Try saying: '${speakQuizzes[currentStep].eng}'`
               )}
             </div>
           </div>
