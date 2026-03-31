@@ -234,9 +234,10 @@ function ConceptExplanation() {
 
     recognition.onresult = (event) => {
       let isCorrect = false;
+      let transcript = "";
       
       if (event.results && event.results[0] && event.results[0][0]) {
-        const transcript = event.results[0][0].transcript;
+        transcript = event.results[0][0].transcript;
         console.log("Speech recognized: ", transcript);
         setLastSpokenText(transcript);
 
@@ -282,6 +283,7 @@ function ConceptExplanation() {
         }
       } else {
         setLastSpokenText("Could not match speech.");
+        transcript = "Could not match speech.";
       }
       
       setIsSpeechCorrect(isCorrect);
